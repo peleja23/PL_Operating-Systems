@@ -12,8 +12,11 @@ typedef struct{
 INFO info;
 
 void add(int fd, INFO* info){
-	lseek(fd, 0, SEEK_END);
+	int registo = 0;
+	registo = lseek(fd, 0, SEEK_END);
+	registo = (registo / sizeof(INFO));
 	write(fd, info, sizeof(INFO));
+	printf("registo: %d \n",registo);
 }
 
 void list(int fd, int N) {
@@ -35,7 +38,22 @@ void update(int fd, char* nome, int n_idade){
 			temp.idade = n_idade;
 			write(fd, &temp, sizeof(INFO));
 		}
-	i++;
+		i++;
+	}
+}
+
+void update_o(int fd, int registo, int n_idade){
+	INFO temp;
+	int bytes_read;
+	int i = 0;
+	while((bytes_read = read(fd, &temp, sizeof(INFO)))>0){
+		if(i == registo){
+			lseek(fd, registo*sizeof(INFO), SEEK_SET);
+			temp.idade = n_idade;
+			write(fd, &temp, sizeof(INFO));
+			_exit(0);
+		}
+		i++;
 	}
 }
 
@@ -63,6 +81,12 @@ int main(int argc, char* argv[]){
 			close(fd);
 			return 0;
 			
+		}else if(strcmp(argv[1],"-o") == 0){
+			int registo = atoi(argv[2]);
+			int n_idade = atoi(argv[3]);
+			update_o(fd, registo, n_idade);
+			close(fd);
+			return 0;
 		}
 	return 0;
 }
