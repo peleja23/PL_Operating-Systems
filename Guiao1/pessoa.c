@@ -11,9 +11,11 @@ typedef struct{
 
 INFO info;
 
-void add(int fd, INFO* info){
+void add(int fd, char* nome, int idade){
 	lseek(fd, 0, SEEK_END);
-	write(fd, info, sizeof(INFO));
+	strcpy(info.nome,nome);
+	info.idade = idade;
+	write(fd, &info, sizeof(INFO));
 }
 
 void list(int fd, int N) {
@@ -31,7 +33,7 @@ void update(int fd, char* nome, int n_idade){
 	int i = 0;
 	while((bytes_read = read(fd, &temp, sizeof(INFO)))>0){
 		if (strcmp(nome,temp.nome) == 0) {
-			lseek(fd, i*sizeof(temp), SEEK_SET);
+			lseek(fd, i*sizeof(INFO), SEEK_SET);
 			temp.idade = n_idade;
 			write(fd, &temp, sizeof(INFO));
 		}
@@ -43,9 +45,10 @@ int main(int argc, char* argv[]){
 	int fd = open("informacao.bin", O_RDWR|O_CREAT, 0666);
 	
 		if(strcmp(argv[1],"-i") == 0){	
-			strcpy(info.nome,argv[2]);
-			info.idade=atoi(argv[3]);
-			add(fd,&info);
+			char nome[20];
+			strcpy(nome,argv[2]);
+			int idade = atoi(argv[3]);
+			add(fd, nome, idade);
 			close(fd);
 			return 0;
 			
