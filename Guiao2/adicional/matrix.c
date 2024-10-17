@@ -1,12 +1,20 @@
 #include "matrix.h"
 #include <unistd.h> 
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h> 
 
 
 int **createMatrix() {
 
     // seed random numbers
     srand(time(NULL));
+    int fd;
+    fd = open("matriz.bin", O_CREAT|O_WRONLY|O_APPEND , 0666);
+    printf("aqui esta o fd %d\n",fd);
+    
     // Allocate and populate matrix with random numbers.
     printf("Generating numbers from 0 to %d...", MAX_RAND);
     int **matrix = (int **) malloc(sizeof(int*) * ROWS);
@@ -14,9 +22,9 @@ int **createMatrix() {
         matrix[i] = (int*) malloc(sizeof(int) * COLUMNS);
         for (int j = 0; j < COLUMNS; j++) {
             matrix[i][j] = rand() % MAX_RAND;
+            write(fd, matrix[i][j], sizeof(matrix[i][j]));
         }
     }
-
     printf("Done.\n");
 
     return matrix;
@@ -59,12 +67,10 @@ int valueExists(int **matrix, int value) {
 
 // ex.6
 void linesWithValue(int **matrix, int value) {
-	int foundLines[ROWS];
-	int foundCount = 0;
 	int status;
-	int a;
+	int pids[ROWS];
     for(int i=0; i < ROWS; i++){
-    	if(fork() == 0){
+    	if((pids[i] = fork()) == 0){
     		for(int j = 0; j < COLUMNS; j++){
     			if(matrix[i][j] == value){
     				_exit(i+1);
@@ -74,23 +80,11 @@ void linesWithValue(int **matrix, int value) {
     	}
     }
 	for(int i = 0; i < ROWS; i++){
-		wait(&status);
+		waitpid(pids[i], &status, 0);
 		int exit_code = WEXITSTATUS(status);
 		if(WIFEXITED(status) && WEXITSTATUS(status) != 0){
-			foundLines[foundCount++] = exit_code - 1;
+			printf("o numero foi encontrado na linha %d\n", exit_code-1);
 		}
-	}
-	for (int i = 0; i < foundCount - 1; i++){
-		for (int j = 0; j < foundCount - i - 1 ; j++){
-			if (foundLines[j] > foundLines[j+1]){
-				a = foundLines[j];
-				foundLines[j] = foundLines[j + 1];
-				foundLines[j + 1] = a;
-			}
-		}
-	}
-	for (int i = 0; i < foundCount; i++) {
-		printf("o numero foi encontrado na linha %d\n", foundLines[i]);
 	}
 }
 
