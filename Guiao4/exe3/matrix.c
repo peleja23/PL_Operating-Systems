@@ -83,14 +83,13 @@ void linesWithValue(int **matrix, int value) {
 void numberPerLine(int **matrix, int value, int *found){
 	INFO info;
 	int status;
-	int pids[ROWS];
 	int pd[2];
+	int pids[ROWS];
 	pipe(pd);
 	// fazer struct para passar a info com nr da linha e numero de vezes encontrada
     for(int i=0; i < ROWS; i++){
-    	if(fork() == 0){
+    	if((pids[i] = fork()) == 0){
     		close(pd[0]);
-    		info.num_linha = i;
     		info.vezes = 0;  
     		for(int j = 0; j < COLUMNS; j++){
     			if(matrix[i][j] == value){
@@ -98,6 +97,7 @@ void numberPerLine(int **matrix, int value, int *found){
     			}
     		}
 			if(info.vezes > 0){
+				info.num_linha = i;
 				write(pd[1], &info, sizeof(INFO));
 				close(pd[1]);
 	    		_exit(0);
@@ -105,17 +105,13 @@ void numberPerLine(int **matrix, int value, int *found){
     		_exit(-1);
     	}
     }
+	close(pd[1]);
 	for(int i = 0; i < ROWS; i++){
-		close(pd[1]);
 		waitpid(pids[i], &status, 0);
-		int exit_code = WEXITSTATUS(status);
-		if(WIFEXITED(status)){
-			if(exit_code == 0){
-				read(pd[0], &info, sizeof(INFO));
-				printf("na linha %d, aparecem %d vezes\n", info.num_linha, info.vezes);
-			}else{
-				printf("não foi encontrado na linha:%d",i);
-			}		
+		if(WIFEXITED(status) && WEXITSTATUS(status) == 0){
+			read(pd[0], &info, sizeof(INFO));
+			printf("na linha %d, aparecem %d vezes\n", info.num_linha, info.vezes);
+				
 		}
 	}
 	close(pd[0]);
