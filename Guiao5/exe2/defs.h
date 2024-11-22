@@ -7,3 +7,4 @@ typedef struct msg{
     int pid;
     int occurrences;
 } Msg;
+

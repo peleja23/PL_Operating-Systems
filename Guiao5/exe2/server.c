@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <time.h>
 #include "defs.h"
 #include "vector.h"
 
@@ -23,33 +24,48 @@ int create_fifo(char *name){
 int main (int argc, char * argv[]){
 	int fd;
 	int fda;
-	int result;
+	int fdl;
 	char str_pid[10];
 	Msg msg;
+	int bytes_read;
+	char buf[4];
 	
 	init_vector();
 	print_vector();
 		
 	create_fifo(argv[1]);
-	
-	while(1){
-		fd = open(argv[1], O_RDONLY);	
-		//receive request	
-		read(fd, &msg, sizeof(Msg));
-		result = count_needle(msg.needle);
-		msg.occurrences = result;
-		printf("o resultado é: %d para o processo: %d\n", msg.occurrences, msg.pid);
-		close(fd);
+	fdl = open("log.txt", O_WRONLY | O_CREAT, 0666);
+	if(fdl < 0){
+		perror("open");
+		return -1;
+	}
+	fd = open(argv[1], O_RDONLY);	
+	while((bytes_read = read(fd, &msg, sizeof(Msg))) > 0){	
+		
+		//search for the needle
+		msg.occurrences = count_needle(msg.needle);
+
 		snprintf(str_pid, sizeof(str_pid), "%d", msg.pid);
+		
+		snprintf(buf, sizeof(buf), "%d", msg.occurrences);
+		
+		//testing
+		write(fdl, &buf, sizeof(int));
+		
+		close(fdl);
 		fda = open(str_pid, O_WRONLY);
 		if(fda < 0){
 			perror("open");
 			return -1;
 		}
+		
 		//send answer
 		write(fda, &msg, sizeof(Msg));
+		fd = open(argv[1], O_RDONLY);
 		close(fda);
+
+		
 	}
-	
+	close(fd);
 	return 0;
 }

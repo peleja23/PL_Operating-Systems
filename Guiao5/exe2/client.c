@@ -21,18 +21,17 @@ int main (int argc, char * argv[]){
 	int fd;
 	int fda;
 	int request = atoi(argv[2]);
-	int pid;
 	char str_pid[10];
 	Msg msg;
-	pid = getpid();
-	snprintf(str_pid, sizeof(str_pid), "%d", pid);
+
+	snprintf(str_pid, sizeof(str_pid), "%d", getpid());
 	create_fifo(str_pid);
 	
 	msg.needle = request;
-	msg.pid = pid;
+	msg.pid = getpid();
 	msg.occurrences = 0;
 	
-	fd = open(argv[1],O_WRONLY);
+	fd = open(argv[1], O_WRONLY);
 	write(fd, &msg, sizeof(Msg));
 	close(fd);
 	
@@ -44,6 +43,7 @@ int main (int argc, char * argv[]){
 	int bytes_read = read(fda, &msg, sizeof(Msg));
 	printf("li %d bytes.\n", bytes_read);
 	close(fda);
+	unlink(str_pid);
 	printf("o valor foi encontrado %d vezes.\n", msg.occurrences);
 	
 	return 0;
